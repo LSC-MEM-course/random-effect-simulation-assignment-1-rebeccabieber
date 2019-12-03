@@ -328,7 +328,10 @@ summary(fit1)
 
 mod.rand.cross = lmer(PercentCorrect ~ Block + Condition + Group + (1|Subject) + (1|Sentence), data = rbdata)
 
-mod.rand.cross_slopes = lmer(PercentCorrect ~ Block + Condition + Group + (1 + Condition|Subject) , data = rbdata) #singular fit
+mod.rand.cross_slopes = lmer(PercentCorrect ~ Block + Condition + Group + (1 + Condition|Subject) + (1|Sentence), data = rbdata) #singular fit, and actually now failed convergence
+
+mod.rand.cross_slopes = lmer(PercentCorrect ~ Block + Condition + (1 + Condition|Subject) + , data = rbdata) #singular fit, and actually now failed convergence
+
 
 #mod.rand.binomial = glmer(PercentCorrect ~ Block + Condition + (1|Subject) + (1|Sentence), data = rbdata, family = binomial, weights = Mean.PossibleKeywords)  #fails to converge
 
