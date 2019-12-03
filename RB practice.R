@@ -259,3 +259,78 @@ colnames(df) <- c("subject", "item", "condition")
 df
 
 
+ranefs_bysubject <- data.frame(subject = subjects,
+                               beta_0_ranef_bysubj = rnorm(length(subjects),
+                                                           0,
+                                                           beta_0_ranef_bysubj_sd),
+                               beta_1_ranef_bysubj = rnorm(length(subjects),
+                                                           0,
+                                                           beta_1_ranef_bysubj_sd),
+                               stringsAsFactors = FALSE)
+
+#join the random effects dataframe with the basic dataframe with subject and condition info
+df <- df %>% left_join(ranefs_bysubject, by = "subject") %>%
+  mutate(y = (beta_0 + beta_0_ranef_bysubj) +             # intercept
+           (beta_1 + beta_1_ranef_bysubj) * condition + # slope
+           rnorm(nrow(.), 0, error_sd))                 # error
+
+
+##------------Practice Exercise 3---------------##
+
+
+simulate_mem_ran_intercept_and_slope <- function(beta_0, 
+                                          beta_1, 
+                                          beta_0_ranef_bysubj_sd,
+                                          beta_1_ranef_bysubj_sd,
+                                          error_sd,
+                                          n_subjects,
+                                          n_items) { 
+  subjects <- paste0("s", 1:n_subjects)
+  items <- paste0("i", 1:n_items)
+  conditions <- 0:1
+  df <- expand.grid(subjects, items, conditions, stringsAsFactors = FALSE)
+  colnames(df) <- c("subject", "item", "condition")
+  
+  #by-subject random effects table - with intercept and slope
+  ranefs_bysubject <- data.frame(subject = subjects,
+                                 beta_0_ranef_bysubj = rnorm(length(subjects),
+                                                             0,
+                                                             beta_0_ranef_bysubj_sd),
+                                 beta_1_ranef_bysubj = rnorm(length(subjects),
+                                                             0,
+                                                             beta_1_ranef_bysubj_sd),
+                                 stringsAsFactors = FALSE)
+  
+  # merge both ranef tables with data
+  
+  df <- df %>% left_join(ranefs_bysubject, by = "subject") %>%
+    mutate(y = (beta_0 + beta_0_ranef_bysubj) +             # intercept
+             (beta_1 + beta_1_ranef_bysubj) * condition + # slope
+             rnorm(nrow(.), 0, error_sd))  
+
+  return(df)
+}
+
+#checking function works
+large_check = simulate_mem_ran_intercept_and_slope(beta_0 = 1000, 
+                                     beta_1 = 50, 
+                                     beta_0_ranef_bysubj_sd = 10,
+                                     beta_1_ranef_bysubj_sd = 5,
+                                     error_sd = 25,
+                                     n_subjects = 300,
+                                     n_items = 100)
+
+summary(large_check)
+fit1 = lmer(y~condition + (1 + condition|subject), data = large_check)
+summary(fit1)
+
+#skipping the rest of the simulations for now to look at my own data
+
+mod.rand.cross = lmer(PercentCorrect ~ Block + Condition + Group + (1|Subject) + (1|Sentence), data = rbdata)
+
+mod.rand.cross_slopes = lmer(PercentCorrect ~ Block + Condition + Group + (1 + Condition|Subject) , data = rbdata) #singular fit
+
+#mod.rand.binomial = glmer(PercentCorrect ~ Block + Condition + (1|Subject) + (1|Sentence), data = rbdata, family = binomial, weights = Mean.PossibleKeywords)  #fails to converge
+
+summary(mod.rand.cross, corr = FALSE)
+summary(mod.rand.cross_slopes, corr = FALSE)
